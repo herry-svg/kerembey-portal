@@ -3,125 +3,189 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KeremBey Portal</title>
+    <title>KeremBey Portal Final</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
         :root { --bg: #0f0c29; --card: rgba(255,255,255,0.1); --text: #fff; --accent: #00d2ff; }
         body.light { --bg: #f0f2f5; --card: #fff; --text: #333; --accent: #3a7bd5; }
         body.dark { --bg: #0f0c29; --card: rgba(255,255,255,0.1); --text: #fff; --accent: #00d2ff; }
         body.gold { --bg: #1a1a1a; --card: rgba(255,215,0,0.1); --text: #ffd700; --accent: #ffcc00; }
-        body { background: var(--bg); color: var(--text); font-family: sans-serif; transition: 0.3s; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        .box { background: var(--card); padding: 30px; border-radius: 20px; width: 320px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); text-align: center; }
-        input { width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: none; box-sizing: border-box; }
-        button { width: 100%; padding: 10px; border: none; border-radius: 5px; background: var(--accent); color: #fff; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; transition: 0.3s; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow: hidden; }
+        
+        /* CANLI SAAT TASARIMI */
+        #live-clock { position: fixed; top: 20px; right: 20px; background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 50px; border: 1px solid var(--accent); color: var(--accent); font-family: 'Courier New', monospace; font-size: 1.2rem; font-weight: bold; box-shadow: 0 0 15px var(--accent); z-index: 1000; letter-spacing: 2px; }
+
+        .box { background: var(--card); padding: 30px; border-radius: 20px; width: 320px; backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1); text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: none; background: rgba(255,255,255,0.2); color: #fff; box-sizing: border-box; outline: none; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 8px; background: var(--accent); color: #fff; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.2s; }
+        button:hover { opacity: 0.8; transform: translateY(-2px); }
         .hidden { display: none; }
-        .target-item { background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px; margin-bottom: 10px; text-align: left; }
-        .date { font-size: 10px; color: var(--accent); display: block; }
+        .menu-btn { margin-bottom: 10px; background: rgba(255,255,255,0.05); text-align: left; padding: 15px; border-left: 4px solid var(--accent); font-size: 16px; }
+        .target-item { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 10px; margin-bottom: 10px; text-align: left; border-left: 3px solid var(--accent); }
+        .date { font-size: 10px; opacity: 0.6; display: block; margin-top: 5px; color: var(--accent); }
+        .admin-user { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: left; }
     </style>
 </head>
 <body class="dark">
 
+<div id="live-clock">00:00:00</div>
+
 <div id="auth-screen" class="box">
-    <h2 id="auth-title">Giriş Yap</h2>
+    <h2 id="auth-title">Hoş Geldin</h2>
     <input type="text" id="user-in" placeholder="Kullanıcı Adı">
     <input type="password" id="pass-in" placeholder="Şifre">
-    <p id="error" style="color:red; font-size:12px;"></p>
-    <button onclick="authAction()">Devam Et</button>
-    <p onclick="toggleAuth()" style="cursor:pointer; font-size:12px;">Kayıt Ol / Giriş Yap</p>
+    <p id="error-msg" style="color:#ff4b2b; font-size:12px;"></p>
+    <button onclick="authAction()">Giriş Yap / Kayıt Ol</button>
+    <p onclick="toggleAuth()" style="cursor:pointer; font-size:12px; margin-top:15px; text-decoration: underline;">Modu Değiştir (Giriş/Kayıt)</p>
 </div>
 
 <div id="main-menu" class="box hidden">
-    <h2 id="welcome"></h2>
-    <button onclick="showSection('sec-target')">1. Hedef Takip</button>
-    <button onclick="showSection('sec-info')">2. Kullanıcı Bilgileri</button>
-    <button onclick="showSection('sec-theme')">3. Tema Değiştirme</button>
-    <button id="admin-btn" class="hidden" style="background: gold; color: black;" onclick="showSection('sec-admin')">4. Yönetim Paneli 👑</button>
-    <button onclick="location.reload()" style="background: red;">Çıkış</button>
+    <h2 id="welcome-msg" style="color: var(--accent);"></h2>
+    <button class="menu-btn" onclick="showSection('sec-target')">🎯 1. Hedef Takip</button>
+    <button class="menu-btn" onclick="showSection('sec-info')">👤 2. Kullanıcı Bilgileri</button>
+    <button class="menu-btn" onclick="showSection('sec-theme')">🎨 3. Tema Değiştirme</button>
+    <button id="admin-btn" class="menu-btn hidden" onclick="showSection('sec-admin')" style="border-left-color: #ffd700; color: #ffd700;">👑 4. Yönetim Paneli</button>
+    <button onclick="location.reload()" style="background:#ff4b2b; margin-top: 20px;">Güvenli Çıkış</button>
 </div>
 
 <div id="sec-target" class="box hidden">
-    <h3>Hedef Ekle</h3>
-    <input type="text" id="target-in" placeholder="Hedefiniz...">
+    <h3>Hedeflerim</h3>
+    <input type="text" id="target-in" placeholder="Hedefini buraya yaz...">
     <button onclick="addTarget()">Ekle</button>
-    <div id="list" style="margin-top:20px; max-height: 150px; overflow-y: auto;"></div>
-    <button onclick="showSection('main-menu')" style="background:gray;">Geri</button>
+    <div id="target-list" style="margin-top:20px; max-height: 200px; overflow-y: auto;"></div>
+    <button onclick="showSection('main-menu')" style="background:gray;">Geri Dön</button>
 </div>
 
 <div id="sec-info" class="box hidden">
-    <h3>Profil</h3>
-    <p id="p-name"></p>
-    <button onclick="showSection('main-menu')" style="background:gray;">Geri</button>
+    <h3>Profilim</h3>
+    <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px;">
+        <p id="prof-name" style="font-weight: bold;"></p>
+        <p id="prof-status">Statü: Standart Üye</p>
+    </div>
+    <button onclick="showSection('main-menu')" style="background:gray; margin-top:15px;">Geri Dön</button>
 </div>
 
 <div id="sec-theme" class="box hidden">
-    <h3>Temalar</h3>
-    <button onclick="setTheme('dark')">Koyu</button>
-    <button onclick="setTheme('light')">Açık</button>
-    <button onclick="setTheme('gold')">Altın</button>
-    <button onclick="showSection('main-menu')" style="background:gray;">Geri</button>
+    <h3>Tema Seçiniz</h3>
+    <button onclick="setTheme('dark')">🌌 Koyu Mod</button>
+    <button onclick="setTheme('light')" style="background:#3a7bd5">🌤️ Aydınlık Mod</button>
+    <button onclick="setTheme('gold')" style="background:#ffd700; color:#000">✨ Altın Mod</button>
+    <button onclick="showSection('main-menu')" style="background:gray; margin-top:15px;">Geri Dön</button>
 </div>
 
 <div id="sec-admin" class="box hidden">
-    <h3>Kullanıcılar</h3>
-    <div id="u-list" style="text-align: left; font-size: 12px;"></div>
-    <button onclick="showSection('main-menu')" style="background:gray;">Geri</button>
+    <h3>Kayıtlı Kullanıcılar</h3>
+    <div id="user-list" style="max-height: 250px; overflow-y: auto;"></div>
+    <button onclick="showSection('main-menu')" style="background:gray; margin-top:15px;">Geri Dön</button>
 </div>
 
 <script>
-    let isLogin = true;
-    let users = JSON.parse(localStorage.getItem('users')) || [];
-    let targets = JSON.parse(localStorage.getItem('targets')) || [];
-    let current = "";
+    // 🔥 CANLI SAAT
+    function updateClock() {
+        const now = new Date();
+        document.getElementById('live-clock').innerText = now.toLocaleTimeString('tr-TR');
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
 
-    function toggleAuth() { isLogin = !isLogin; document.getElementById('auth-title').innerText = isLogin ? "Giriş Yap" : "Kayıt Ol"; }
+    // 🔥 FIREBASE - BURAYI KENDİ BİLGİLERİNLE DOLDUR
+    const firebaseConfig = {
+        apiKey: "AIzaSyB1H_o80FeXzl_eCEqtKhSa13GKyox5EcA",
+        databaseURL: "https://kerembeyportal-default-rtdb.firebaseio.com"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    let isLogin = true;
+    let currentUser = "";
+
+    function toggleAuth() { 
+        isLogin = !isLogin; 
+        document.getElementById('auth-title').innerText = isLogin ? "Giriş Yap" : "Kayıt Ol";
+    }
 
     function authAction() {
         const u = document.getElementById('user-in').value.trim();
         const p = document.getElementById('pass-in').value;
-        const err = document.getElementById('error');
+        const err = document.getElementById('error-msg');
         err.innerText = "";
 
+        // Admin Kontrolü
+        if(u === "KeremBey" && p === "521200369") { loginSuccess("KeremBey", true); return; }
+
         if(isLogin) {
-            if(u === "KeremBey" && p === "521200369") { loginSuccess("KeremBey", true); }
-            else {
-                let f = users.find(x => x.user === u && x.pass === p);
-                if(f) loginSuccess(u, false); else err.innerText = "Hatalı Giriş!";
-            }
+            db.ref('users/' + u).once('value').then((s) => {
+                if(s.exists() && s.val().pass === p) loginSuccess(u, false);
+                else err.innerText = "Kullanıcı adı veya şifre hatalı!";
+            });
         } else {
-            if(u.length < 4) return err.innerText = "İsim 3 harften fazla olmalı!";
-            if(p.length < 5) return err.innerText = "Şifre 4 sayıdan fazla olmalı!";
-            if(users.find(x => x.user === u) || u === "KeremBey") return err.innerText = "Bu isim alınmış!";
-            users.push({user:u, pass:p});
-            localStorage.setItem('users', JSON.stringify(users));
-            alert("Kayıt tamam! Giriş yap."); toggleAuth();
+            // Kayıt Kuralları
+            if(u.length <= 3) return err.innerText = "İsim 3 harften fazla olmalı!";
+            if(p.length <= 4) return err.innerText = "Şifre 4 sayıdan fazla olmalı!";
+            
+            db.ref('users/' + u).once('value').then((s) => {
+                if(s.exists()) { err.innerText = "Bu isim zaten alınmış!"; }
+                else {
+                    db.ref('users/' + u).set({ user: u, pass: p }).then(() => {
+                        alert("Başarıyla kayıt oldun! Şimdi giriş yap."); toggleAuth();
+                    });
+                }
+            });
         }
     }
 
-    function loginSuccess(name, admin) {
-        current = name;
+    function loginSuccess(name, isAdmin) {
+        currentUser = name;
         document.getElementById('auth-screen').classList.add('hidden');
         document.getElementById('main-menu').classList.remove('hidden');
-        document.getElementById('welcome').innerText = "Selam " + name;
-        document.getElementById('p-name').innerText = "Kullanıcı: " + name;
-        if(admin) document.getElementById('admin-btn').classList.remove('hidden');
-        render(); renderUsers();
+        document.getElementById('welcome-msg').innerText = "Selam, " + name;
+        document.getElementById('prof-name').innerText = "Kullanıcı: " + name;
+        if(isAdmin) {
+            document.getElementById('admin-btn').classList.remove('hidden');
+            document.getElementById('prof-status').innerText = "Statü: Yönetici 👑";
+            renderAdmin();
+        }
+        renderTargets();
     }
 
-    function showSection(id) { document.querySelectorAll('.box').forEach(x => x.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); }
     function addTarget() {
-        let v = document.getElementById('target-in').value; if(!v) return;
-        targets.push({u:current, t:v, d: new Date().toLocaleString()});
-        localStorage.setItem('targets', JSON.stringify(targets));
-        document.getElementById('target-in').value = ""; render();
+        const val = document.getElementById('target-in').value;
+        if(!val) return;
+        const time = new Date().toLocaleString('tr-TR');
+        db.ref('targets/' + currentUser).push({ text: val, date: time }).then(() => {
+            document.getElementById('target-in').value = "";
+        });
     }
-    function render() {
-        let l = document.getElementById('list'); l.innerHTML = "";
-        targets.filter(x => x.u === current).forEach(x => { l.innerHTML += `<div class="target-item">${x.t}<span class="date">${x.d}</span></div>`; });
+
+    function renderTargets() {
+        db.ref('targets/' + currentUser).on('value', (s) => {
+            const list = document.getElementById('target-list');
+            list.innerHTML = "";
+            s.forEach((child) => {
+                list.innerHTML += `<div class="target-item">${child.val().text}<span class="date">📅 ${child.val().date}</span></div>`;
+            });
+        });
     }
-    function renderUsers() {
-        let l = document.getElementById('u-list'); l.innerHTML = "";
-        users.forEach(x => { l.innerHTML += `<div>👤 ${x.user} | 🔑 ${x.pass}</div><hr>`; });
+
+    function renderAdmin() {
+        db.ref('users').on('value', (s) => {
+            const list = document.getElementById('user-list');
+            list.innerHTML = "";
+            s.forEach((child) => {
+                list.innerHTML += `<div class="admin-user">👤 <b>${child.val().user}</b><br>🔑 Şifre: ${child.val().pass}</div>`;
+            });
+        });
     }
+
+    function showSection(id) {
+        document.querySelectorAll('.box').forEach(x => x.classList.add('hidden'));
+        document.getElementById(id).classList.remove('hidden');
+    }
+
     function setTheme(t) { document.body.className = t; }
 </script>
+
 </body>
 </html>
