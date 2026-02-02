@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KeremBey Portal</title>
+    <style>
+        :root { --bg: #0f0c29; --card: rgba(255,255,255,0.1); --text: #fff; --accent: #00d2ff; }
+        body.light { --bg: #f0f2f5; --card: #fff; --text: #333; --accent: #3a7bd5; }
+        body.dark { --bg: #0f0c29; --card: rgba(255,255,255,0.1); --text: #fff; --accent: #00d2ff; }
+        body.gold { --bg: #1a1a1a; --card: rgba(255,215,0,0.1); --text: #ffd700; --accent: #ffcc00; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; transition: 0.3s; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .box { background: var(--card); padding: 30px; border-radius: 20px; width: 320px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); text-align: center; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: none; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; border: none; border-radius: 5px; background: var(--accent); color: #fff; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .hidden { display: none; }
+        .target-item { background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px; margin-bottom: 10px; text-align: left; }
+        .date { font-size: 10px; color: var(--accent); display: block; }
+    </style>
+</head>
+<body class="dark">
+
+<div id="auth-screen" class="box">
+    <h2 id="auth-title">Giriş Yap</h2>
+    <input type="text" id="user-in" placeholder="Kullanıcı Adı">
+    <input type="password" id="pass-in" placeholder="Şifre">
+    <p id="error" style="color:red; font-size:12px;"></p>
+    <button onclick="authAction()">Devam Et</button>
+    <p onclick="toggleAuth()" style="cursor:pointer; font-size:12px;">Kayıt Ol / Giriş Yap</p>
+</div>
+
+<div id="main-menu" class="box hidden">
+    <h2 id="welcome"></h2>
+    <button onclick="showSection('sec-target')">1. Hedef Takip</button>
+    <button onclick="showSection('sec-info')">2. Kullanıcı Bilgileri</button>
+    <button onclick="showSection('sec-theme')">3. Tema Değiştirme</button>
+    <button id="admin-btn" class="hidden" style="background: gold; color: black;" onclick="showSection('sec-admin')">4. Yönetim Paneli 👑</button>
+    <button onclick="location.reload()" style="background: red;">Çıkış</button>
+</div>
+
+<div id="sec-target" class="box hidden">
+    <h3>Hedef Ekle</h3>
+    <input type="text" id="target-in" placeholder="Hedefiniz...">
+    <button onclick="addTarget()">Ekle</button>
+    <div id="list" style="margin-top:20px; max-height: 150px; overflow-y: auto;"></div>
+    <button onclick="showSection('main-menu')" style="background:gray;">Geri</button>
+</div>
+
+<div id="sec-info" class="box hidden">
+    <h3>Profil</h3>
+    <p id="p-name"></p>
+    <button onclick="showSection('main-menu')" style="background:gray;">Geri</button>
+</div>
+
+<div id="sec-theme" class="box hidden">
+    <h3>Temalar</h3>
+    <button onclick="setTheme('dark')">Koyu</button>
+    <button onclick="setTheme('light')">Açık</button>
+    <button onclick="setTheme('gold')">Altın</button>
+    <button onclick="showSection('main-menu')" style="background:gray;">Geri</button>
+</div>
+
+<div id="sec-admin" class="box hidden">
+    <h3>Kullanıcılar</h3>
+    <div id="u-list" style="text-align: left; font-size: 12px;"></div>
+    <button onclick="showSection('main-menu')" style="background:gray;">Geri</button>
+</div>
+
+<script>
+    let isLogin = true;
+    let users = JSON.parse(localStorage.getItem('users')) || [];
+    let targets = JSON.parse(localStorage.getItem('targets')) || [];
+    let current = "";
+
+    function toggleAuth() { isLogin = !isLogin; document.getElementById('auth-title').innerText = isLogin ? "Giriş Yap" : "Kayıt Ol"; }
+
+    function authAction() {
+        const u = document.getElementById('user-in').value.trim();
+        const p = document.getElementById('pass-in').value;
+        const err = document.getElementById('error');
+        err.innerText = "";
+
+        if(isLogin) {
+            if(u === "KeremBey" && p === "521200369") { loginSuccess("KeremBey", true); }
+            else {
+                let f = users.find(x => x.user === u && x.pass === p);
+                if(f) loginSuccess(u, false); else err.innerText = "Hatalı Giriş!";
+            }
+        } else {
+            if(u.length < 4) return err.innerText = "İsim 3 harften fazla olmalı!";
+            if(p.length < 5) return err.innerText = "Şifre 4 sayıdan fazla olmalı!";
+            if(users.find(x => x.user === u) || u === "KeremBey") return err.innerText = "Bu isim alınmış!";
+            users.push({user:u, pass:p});
+            localStorage.setItem('users', JSON.stringify(users));
+            alert("Kayıt tamam! Giriş yap."); toggleAuth();
+        }
+    }
+
+    function loginSuccess(name, admin) {
+        current = name;
+        document.getElementById('auth-screen').classList.add('hidden');
+        document.getElementById('main-menu').classList.remove('hidden');
+        document.getElementById('welcome').innerText = "Selam " + name;
+        document.getElementById('p-name').innerText = "Kullanıcı: " + name;
+        if(admin) document.getElementById('admin-btn').classList.remove('hidden');
+        render(); renderUsers();
+    }
+
+    function showSection(id) { document.querySelectorAll('.box').forEach(x => x.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); }
+    function addTarget() {
+        let v = document.getElementById('target-in').value; if(!v) return;
+        targets.push({u:current, t:v, d: new Date().toLocaleString()});
+        localStorage.setItem('targets', JSON.stringify(targets));
+        document.getElementById('target-in').value = ""; render();
+    }
+    function render() {
+        let l = document.getElementById('list'); l.innerHTML = "";
+        targets.filter(x => x.u === current).forEach(x => { l.innerHTML += `<div class="target-item">${x.t}<span class="date">${x.d}</span></div>`; });
+    }
+    function renderUsers() {
+        let l = document.getElementById('u-list'); l.innerHTML = "";
+        users.forEach(x => { l.innerHTML += `<div>👤 ${x.user} | 🔑 ${x.pass}</div><hr>`; });
+    }
+    function setTheme(t) { document.body.className = t; }
+</script>
+</body>
+</html>
